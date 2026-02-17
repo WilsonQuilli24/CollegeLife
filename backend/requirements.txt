@@ -1,0 +1,8 @@
+Authlib
+cloudinary
+Flask
+Flask-Caching
+Flask-Cors
+Flask-Limiter
+python-dotenv
+requests
