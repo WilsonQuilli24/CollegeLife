@@ -1,0 +1,160 @@
+/* Navbar CSS */
+.navbar-div {
+    display: grid;
+    height: 100vh;
+    background-color: rgb(255, 255, 255);
+    place-items: center;
+    padding: 20px;
+}
+
+.nav-links {
+    position: relative;
+    border: 2px solid black;
+    background-color: white;
+    padding: 8px;
+    border-radius: 999px;
+    width: fit-content;
+    display: flex;
+    gap: 5px;
+    list-style: none;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.nav-children {
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: black;
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+
+.nav-children:hover {
+    color: white;
+}
+
+.cursor {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background-color: black;
+    border-radius: 999px;
+    z-index: 1;
+    opacity: 0;
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        gap: 2px;
+        padding: 6px;
+    }
+    .nav-children {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-div {
+        align-items: start;
+        padding-top: 20px;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: 15px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        scroll-behavior: smooth;
+    }
+
+    .nav-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-children {
+        font-size: 13px;
+        padding: 6px 10px;
+
+    }
+}
+
+/* Footer CSS */
+.footer{
+    background:#0f172a;
+    color:white;
+    padding:60px 20px 20px;
+    width:100%;
+    box-sizing:border-box;
+    overflow-x:hidden;
+}
+
+.footer-container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:40px;
+    max-width:1200px;
+    margin:0 auto;
+    width:100%;
+    box-sizing:border-box;
+}
+
+.footer-section{
+    min-width:0;
+}
+
+.footer-section h2{
+    margin-bottom:15px;
+    font-size:20px;
+}
+
+.footer-section p{
+    color:#cbd5e1;
+    line-height:1.6;
+}
+
+.footer-section ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+}
+
+.footer-section ul li{
+    margin-bottom:10px;
+}
+
+.footer-section ul li a{
+    color:#cbd5e1;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.footer-section ul li a:hover{
+    color:white;
+}
+
+.social-links li{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.footer-bottom{
+    border-top:1px solid #334155;
+    margin-top:40px;
+    padding-top:20px;
+    text-align:center;
+    color:#94a3b8;
+    width:100%;
+    box-sizing:border-box;
+}
+
+@media(max-width:768px){
+    .footer{
+        text-align:center;
+    }
+}
