@@ -2,12 +2,16 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "./component.css";
+import logo from "../assets/CollegeLifeLogo.png";
 
 const MotionLi = motion.li;
 
 function Navbar() {
+    const navigate = useNavigate();
+
     return (
         <div className="navbar-div">
+            <img src={logo} alt="CollegeLife Logo" className="navbar-logo" onClick={() => navigate("/")}/>
             <SlideTabs />
         </div>
     );
@@ -65,7 +69,6 @@ const Tab = ({ children, setPosition, onClick }) => {
         </li>
     );
 };
-
 
 const Cursor = ({ position }) => {
     return (

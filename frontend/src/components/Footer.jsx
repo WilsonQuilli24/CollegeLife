@@ -30,9 +30,9 @@ const Footer = () => {
                     <h2>Check These Out!</h2>
                     <ul className="social-links">
                         <li>
-                            <FaGithub /> <a href="#">GitHub</a></li>
+                            <FaGithub /> <a href="https://github.com/wilsonquilli" target = "_blank">GitHub</a></li>
                         <li>
-                            <FaLinkedin /> <a href="#">LinkedIn</a></li>
+                            <FaLinkedin /> <a href="https://www.linkedin.com/in/wilson-quilli-8469b4291/" target = "_blank">LinkedIn</a></li>
                     </ul>
                 </div>
             </div>
