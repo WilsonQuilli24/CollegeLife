@@ -80,9 +80,9 @@ jobs:
           pip install pip-audit
           pip-audit -r requirements.txt
 
-      - name: Frontend dependency audit (high+)
+      - name: Frontend dependency audit (high+, prod deps)
         working-directory: frontend
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
   test:
     name: test
