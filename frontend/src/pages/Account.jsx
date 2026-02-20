@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./Pages.css";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
 
 function Account() {
     const location = useLocation();

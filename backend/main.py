@@ -164,13 +164,35 @@ def resolve_frontend_origin(preferred=None):
     if stored and is_allowed_frontend_origin(stored):
         return _normalize_origin(stored)
 
+    header_origin = request.headers.get("Origin")
+    if header_origin and is_allowed_frontend_origin(header_origin):
+        return _normalize_origin(header_origin)
+
+    if request.referrer and is_allowed_frontend_origin(request.referrer):
+        return _normalize_origin(request.referrer)
+
     return FRONTEND_URL
 
 def remember_frontend_origin(candidate):
     if is_allowed_frontend_origin(candidate):
         session["frontend_origin"] = _normalize_origin(candidate)
 
-def _event(event, level="info", **data):  # pragma: no cover
+def _safe_next_path(candidate):
+    if not candidate:
+        return None
+    if not candidate.startswith("/") or candidate.startswith("//"):
+        return None
+    return candidate
+
+def _backend_origin():
+    return BACKEND_URL.rstrip("/")
+
+def _clear_spotify_state():
+    stale_keys = [k for k in session.keys() if str(k).startswith("_state_spotify_")]
+    for key in stale_keys:
+        session.pop(key, None)
+
+def _event(event, level="info", **data):  
     payload = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "level": level.upper(),
@@ -180,18 +202,18 @@ def _event(event, level="info", **data):  # pragma: no cover
     message = json.dumps(payload, default=str)
     getattr(logger, level if hasattr(logger, level) else "info")(message)
 
-def _request_path():  # pragma: no cover
+def _request_path(): 
     if request.url_rule and request.url_rule.rule:
         return request.url_rule.rule
     return request.path
 
 @app.before_request
-def _before_request():  # pragma: no cover
+def _before_request(): 
     g.request_start = time.perf_counter()
     g.request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
 
 @app.after_request
-def _after_request(response):  # pragma: no cover
+def _after_request(response):  
     elapsed = max(time.perf_counter() - getattr(g, "request_start", time.perf_counter()), 0)
     path = _request_path()
     method = request.method
@@ -213,7 +235,7 @@ def _after_request(response):  # pragma: no cover
     return response
 
 @app.errorhandler(Exception)
-def _handle_unexpected_error(error):  # pragma: no cover
+def _handle_unexpected_error(error):  
     if isinstance(error, HTTPException):
         return error
     request_id = getattr(g, "request_id", None)
@@ -273,7 +295,7 @@ def serialize_post(row, current_user_id=None):
         "viewed_by_me": current in viewed_by if current is not None else False,
     }
 
-def get_spotify_headers():  # pragma: no cover
+def get_spotify_headers(): 
     token = session.get("spotify_token")
     if not token:
         return None
@@ -354,7 +376,7 @@ def requireAdmin(f):
     return decorated
 
 @app.get("/health")
-def health_check():  # pragma: no cover
+def health_check(): 
     if supabase is None:
         return jsonify({"status": "UP", "db": "NOT_CONFIGURED"}), 200
 
@@ -365,11 +387,11 @@ def health_check():  # pragma: no cover
         return jsonify({"status": "DEGRADED", "db": "DOWN"}), 500
 
 @app.get("/health/live")
-def health_live():  # pragma: no cover
+def health_live():  
     return jsonify({"status": "UP"}), 200
 
 @app.get("/health/ready")
-def health_ready():  # pragma: no cover
+def health_ready(): 
     if supabase is None:
         return jsonify({"status": "UP", "db": "NOT_CONFIGURED"}), 200
     try:
@@ -379,12 +401,13 @@ def health_ready():  # pragma: no cover
         return jsonify({"status": "DOWN", "db": "DOWN"}), 503
 
 @app.get("/metrics")
-def metrics():  # pragma: no cover
+def metrics(): 
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 @app.route("/auth/login")
-def login():  # pragma: no cover
+def login(): 
     frontend_origin = request.args.get("frontend_origin")
+    next_path = _safe_next_path(request.args.get("next"))
     if frontend_origin:
         remember_frontend_origin(frontend_origin)
     else:
@@ -395,27 +418,29 @@ def login():  # pragma: no cover
     session.clear()
     if frontend_origin:
         remember_frontend_origin(frontend_origin)
+    if next_path:
+        session["oauth_next"] = next_path
 
-    redirect_uri = f"{BACKEND_URL}/auth/callback"
+    redirect_uri = f"{_backend_origin()}/auth/callback"
     return oauth.google.authorize_redirect(
         redirect_uri,
         prompt="select_account",
     )
 
 @app.get("/auth/reset-session")
-def reset_session():  # pragma: no cover
+def reset_session():  
     session.clear()
     return jsonify({"message": "Session reset"})
 
 @app.get("/auth/logout")
-def logout():  # pragma: no cover
+def logout(): 
     frontend_origin = request.args.get("frontend_origin")
     target_origin = resolve_frontend_origin(frontend_origin)
     session.clear()
     return redirect(f"{target_origin}/")
 
 @app.route("/auth/callback")
-def auth_callback():  # pragma: no cover
+def auth_callback():  
     try:
         oauth.google.authorize_access_token()
     except MismatchingStateError:
@@ -468,23 +493,26 @@ def auth_callback():  # pragma: no cover
     except Exception as e:
         return jsonify({"error": "Failed to persist user in Supabase", "details": str(e)}), 500
 
+    next_path = _safe_next_path(session.pop("oauth_next", None))
+    if next_path:
+        return redirect(f"{_backend_origin()}{next_path}")
     return redirect(f"{resolve_frontend_origin()}/?just_logged_in=1")
 
 @app.get("/api/hello")
 @requireAuth
-def hello():  # pragma: no cover
+def hello(): 
     return jsonify({"message": f"Hello, {request.user['email']}!"})
 
 @app.get("/api/server-time")
 @requireAuth
 @cache.cached(timeout=300, query_string=True)
-def server_time():  # pragma: no cover
+def server_time():  
     return jsonify({"serverTime": datetime.utcnow().isoformat() + "Z"})
 
 
 @app.route("/api/university")
 @cache.cached(timeout=600, query_string=True)
-def get_university():  # pragma: no cover
+def get_university():  
     name = request.args.get("name")
     url = "https://api.api-ninjas.com/v1/university"
     headers = {"X-API-Key": API_KEY}
@@ -504,7 +532,7 @@ def get_university():  # pragma: no cover
 @requireAuth
 @limiter.limit("10 per minute")
 @cache.cached(timeout=300, query_string=True)
-def get_weather():  # pragma: no cover
+def get_weather():  
     city = request.args.get("city")
     if not city:
         return jsonify({"error": "City is required"}), 400
@@ -533,29 +561,55 @@ def get_weather():  # pragma: no cover
         return jsonify({"error": "Unexpected response format from weather API"}), 500
 
 @app.route("/auth/spotify")
-@requireAuth
-def spotify_login():  # pragma: no cover
+def spotify_login():  
     frontend_origin = request.args.get("frontend_origin")
     if frontend_origin:
         remember_frontend_origin(frontend_origin)
+    else:
+        remember_frontend_origin(request.headers.get("Origin"))
+        if request.referrer:
+            remember_frontend_origin(request.referrer)
 
-    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
-    return spotify.authorize_redirect(redirect_uri)
+    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI") or f"{_backend_origin()}/api/spotify/callback"
+    _clear_spotify_state()
+    try:
+        return spotify.authorize_redirect(redirect_uri)
+    except Exception as e:
+        _event(
+            "spotify_authorize_redirect_failed",
+            level="error",
+            request_id=getattr(g, "request_id", None),
+            error_type=type(e).__name__,
+        )
+        return redirect(f"{resolve_frontend_origin()}/music?error=spotify_authorize_failed")
 
 @app.route("/api/spotify/callback")
-@requireAuth
-def spotify_callback():  # pragma: no cover
-    token = spotify.authorize_access_token()
-    token["expires_at"] = datetime.utcnow().timestamp() + token["expires_in"]
+def spotify_callback():
+    try:
+        token = spotify.authorize_access_token()
+    except MismatchingStateError:
+        _clear_spotify_state()
+        return redirect(f"{resolve_frontend_origin()}/music?error=spotify_state_mismatch")
+    except Exception as e:
+        _event(
+            "spotify_callback_failed",
+            level="error",
+            request_id=getattr(g, "request_id", None),
+            error_type=type(e).__name__,
+        )
+        return redirect(f"{resolve_frontend_origin()}/music?error=spotify_callback_failed")
+
+    expires_in = token.get("expires_in") or 3600
+    token["expires_at"] = datetime.utcnow().timestamp() + int(expires_in)
     session["spotify_token"] = token
-    return redirect(f"{resolve_frontend_origin()}/music")
+    session.modified = True
+    return redirect(f"{resolve_frontend_origin()}/music?spotify_connected=1")
 
 
 @app.get("/spotify/current")
-@requireAuth
 @limiter.limit("15 per minute")
 @cache.cached(timeout=300, query_string=True)
-def spotify_current_track():  # pragma: no cover
+def spotify_current_track():
     headers = get_spotify_headers()
     if not headers:
         return jsonify({"error": "Spotify not authenticated"}), 401
@@ -582,8 +636,7 @@ def spotify_current_track():  # pragma: no cover
     )
 
 @app.get("/api/spotify/token")
-@requireAuth
-def get_spotify_token():  # pragma: no cover
+def get_spotify_token(): 
     headers = get_spotify_headers()
     if not headers:
         return jsonify({"error": "Spotify not authenticated"}), 401
@@ -594,7 +647,7 @@ def get_spotify_token():  # pragma: no cover
 @requireAuth
 @limiter.limit("5 per minute")
 @cache.cached(timeout=300, query_string=True)
-def get_yelp_restaurants():  # pragma: no cover
+def get_yelp_restaurants(): 
     location = request.args.get("location")
     term = request.args.get("term", "restaurant")
     limit = request.args.get("limit", 5)
@@ -630,7 +683,7 @@ def get_yelp_restaurants():  # pragma: no cover
 
 @app.post("/api/media/upload")
 @requireAuth
-def upload_media():  # pragma: no cover
+def upload_media():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -664,7 +717,7 @@ def upload_media():  # pragma: no cover
 @app.get("/api/media")
 @requireAuth
 @cache.cached(timeout=300, query_string=True)
-def list_media():  # pragma: no cover
+def list_media(): 
     owner = request.user.get("id") or request.user.get("email") or "anonymous"
     owner = str(owner).replace("/", "_")
     try:
@@ -679,7 +732,7 @@ def list_media():  # pragma: no cover
 
 @app.put("/api/media/<public_id>")
 @requireAuth
-def edit_media(public_id):  # pragma: no cover
+def edit_media(public_id):  
     data = request.get_json()
     try:
         result = cloudinary.api.update(public_id, folder=data.get("folder"))
@@ -689,7 +742,7 @@ def edit_media(public_id):  # pragma: no cover
 
 @app.delete("/api/media/<public_id>")
 @requireAuth
-def delete_media(public_id):  # pragma: no cover
+def delete_media(public_id):
     try:
         cloudinary.uploader.destroy(public_id, invalidate=True)
         return jsonify({"deleted": public_id})
@@ -1014,5 +1067,5 @@ def create_user():
     except Exception as e:
         return jsonify({"error": "Failed to create user", "details": str(e)}), 500
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":  
     app.run(port=8000, debug=True)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./Pages.css";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
 
 function Posts() {
     const [posts, setPosts] = useState([]);

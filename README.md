@@ -11,6 +11,7 @@ Core features:
 - Supabase Database (user/post data)
 - Cloudinary (media upload/storage)
 - Spotify API (music page)
+- Note: Spotify Premium is required for full current-track/playback access.
 - Yelp API (restaurants page)
 - OpenWeather API (weather page)
 
@@ -118,6 +119,9 @@ Quality gate:
 - Includes flows:
 - login -> list -> detail
 - login -> create new entity
+
+Spotify requirement:
+- The Music page requires a Spotify Premium account for reliable current-track and playback endpoints.
 
 ## Observability
 
