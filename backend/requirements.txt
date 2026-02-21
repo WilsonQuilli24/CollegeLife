@@ -10,3 +10,4 @@ supabase
 prometheus-client
 pytest
 pytest-cov
+gunicorn
