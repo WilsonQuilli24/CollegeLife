@@ -10,4 +10,3 @@ supabase
 prometheus-client
 pytest
 pytest-cov
-gunicorn==21.2.0
