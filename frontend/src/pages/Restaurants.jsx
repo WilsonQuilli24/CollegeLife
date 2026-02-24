@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./Pages.css";
 
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
 
 function Restaurants() {
     const [location, setLocation] = useState("Philadelphia");

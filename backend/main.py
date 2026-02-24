@@ -35,8 +35,8 @@ cache = Cache(app, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT":
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 app.config["SESSION_COOKIE_NAME"] = "college_session"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SAMESITE"] = os.getenv("SESSION_COOKIE_SAMESITE", "None")
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
 
 API_KEY = os.getenv("UNI_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API")
@@ -64,16 +64,20 @@ elif os.getenv("DATABASE_URL") and SUPABASE_SERVICE_ROLE_KEY:
         candidate = f"https://{project_ref}.supabase.co"
         supabase = create_client(candidate, SUPABASE_SERVICE_ROLE_KEY.strip())
 
-CORS(
-    app,
-    origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-    ],
-    supports_credentials=True,
-)
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(FRONTEND_URL)
+extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+for origin in extra_origins:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 oauth = OAuth(app)
 oauth.register(

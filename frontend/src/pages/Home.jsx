@@ -14,7 +14,7 @@ import weather_2 from "../assets/weather_2.jpg";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
 
 function Home() {
     const navigate = useNavigate();
