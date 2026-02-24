@@ -47,26 +47,41 @@ Core features:
 
 ## Run Locally
 
-### 1) Prerequisites
+Prerequisites:
 - Python 3.13+
 - Node 22+
 - npm
 
-### 2) Configure environment
-- Copy .env.example to .env in repo root.
-- Fill all required keys with your own credentials.
+1. Create .env in the repository root (copy from .env.example).
+2. Set local URLs (no trailing slash):
+- BACKEND_URL=http://localhost:8000
+- FRONTEND_URL=http://localhost:5173
+- SPOTIFY_REDIRECT_URI=http://localhost:8000/api/spotify/callback
+3. In Google OAuth client settings, add:
+- http://localhost:8000/auth/callback
+4. In Spotify app settings, add:
+- http://localhost:8000/api/spotify/callback
+5. Start backend:
 
-### 3) Start backend
-1. cd backend
-2. pip install -r requirements.txt
-3. python3 main.py
-Backend runs on http://localhost:8000
+cd backend
+pip install -r requirements.txt
+python3 main.py
 
-### 4) Start frontend
-1. cd frontend
-2. npm install
-3. npm run dev
-Frontend runs on http://localhost:5173
+6. Start frontend:
+
+cd frontend
+npm install
+npm run dev
+
+7. Open:
+- http://localhost:5173
+
+## Deployment
+
+Backend: Deployed on Render
+Frontend: Deployed on Vercel
+
+You can also just view this Vercel Link for CollegeLife: college-life-nu.vercel.app
 
 ## Run with Docker
 
@@ -82,7 +97,7 @@ docker compose -f docker-compose.observability.yml up --build
 
 ## CI/CD
 
-Workflow file: .github/workflows/ci.yml
+Workflow file: `.github/workflows/ci.yml`
 
 Pipeline behavior:
 - Trigger on push and pull request to main
@@ -147,7 +162,8 @@ Dashboard assets:
 ## Credentials and Sample Data Instructions
 
 - Never commit real secrets to Git.
-- Use .env locally (already gitignored).
+- Use `.env` locally (already gitignored).
+- Use Render/Vercel environment variables in production.
 - Required secrets include:
 - Google OAuth client id/secret
 - Supabase URL + service role key
