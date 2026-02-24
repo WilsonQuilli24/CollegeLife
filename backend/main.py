@@ -30,6 +30,24 @@ from services.post_rules import (
 
 load_dotenv()
 
+
+def _normalize_config_origin(value, default_scheme="https"):
+    if not value:
+        return None
+    raw = str(value).strip().strip('"').strip("'")
+    if not raw:
+        return None
+    if not raw.startswith(("http://", "https://")):
+        host = raw.split("/")[0]
+        if host.startswith(("localhost", "127.0.0.1")):
+            raw = f"http://{raw}"
+        else:
+            raw = f"{default_scheme}://{raw}"
+    parsed = urlparse(raw)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
 app = Flask(__name__)
 cache = Cache(app, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
@@ -41,8 +59,8 @@ app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "true")
 API_KEY = os.getenv("UNI_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API")
 YELP_API_KEY = os.getenv("YELP_API_KEY")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+FRONTEND_URL = _normalize_config_origin(os.getenv("FRONTEND_URL")) or "http://localhost:5173"
+BACKEND_URL = _normalize_config_origin(os.getenv("BACKEND_URL")) or "http://localhost:8000"
 ADMIN_EMAILS = {
     email.strip().lower()
     for email in os.getenv("ADMIN_EMAILS", "").split(",")
@@ -74,8 +92,9 @@ if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
     allowed_origins.append(FRONTEND_URL)
 extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 for origin in extra_origins:
-    if origin not in allowed_origins:
-        allowed_origins.append(origin)
+    normalized = _normalize_config_origin(origin)
+    if normalized and normalized not in allowed_origins:
+        allowed_origins.append(normalized)
 
 CORS(app, origins=allowed_origins, supports_credentials=True)
 
